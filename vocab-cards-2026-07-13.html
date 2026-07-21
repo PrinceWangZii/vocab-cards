@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>每日 5 词 · 单词角色卡（自测版）</title>
+<style>
+  :root{
+    --bg:#f7f8fc; --card:#ffffff; --ink:#1f2430; --sub:#6b7280;
+    --line:#e8ebf2; --shadow:0 10px 30px rgba(40,50,90,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,sans-serif;
+    background:radial-gradient(1200px 600px at 10% -10%,#eef2ff 0,transparent 60%),
+               radial-gradient(1000px 500px at 110% 0,#fff0f6 0,transparent 55%),
+               var(--bg);
+    color:var(--ink); padding:32px 18px 60px; min-height:100vh;
+  }
+  .wrap{max-width:1080px;margin:0 auto;}
+  header.hero{ text-align:center;margin-bottom:14px; }
+  .hero .date{
+    display:inline-block;font-size:13px;letter-spacing:2px;color:#fff;
+    background:linear-gradient(90deg,#6366f1,#ec4899);
+    padding:5px 16px;border-radius:999px;margin-bottom:14px;font-weight:600;
+  }
+  .hero h1{
+    font-size:34px;line-height:1.25;font-weight:800;
+    background:linear-gradient(90deg,#4338ca,#db2777);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .hero p{color:var(--sub);margin-top:10px;font-size:15px;}
+  .hintbar{
+    text-align:center;margin:14px auto 26px;max-width:760px;
+    background:#fff;border:1px solid var(--line);border-radius:14px;
+    padding:11px 16px;font-size:13.5px;color:#4b5563;box-shadow:var(--shadow);
+  }
+  .hintbar b{color:#4338ca;}
+  .hintbar .k{
+    display:inline-block;background:#eef2ff;color:#4338ca;font-weight:700;
+    border-radius:6px;padding:1px 8px;margin:0 2px;font-size:12.5px;
+  }
+  .history-bar{ text-align:center;margin:0 auto 24px; }
+  .hist-link{
+    display:inline-flex;align-items:center;gap:7px;
+    background:linear-gradient(90deg,#6366f1,#4338ca);color:#fff;
+    font-size:14px;font-weight:700;text-decoration:none;
+    padding:10px 22px;border-radius:999px;box-shadow:0 8px 20px rgba(79,70,229,.28);
+    transition:transform .15s ease,filter .15s ease;
+  }
+  .hist-link:hover{transform:translateY(-2px);filter:brightness(1.06);}
+  .hist-link:active{transform:translateY(0);}
+  .grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:22px; }
+  .card{ background:transparent;border-radius:22px; perspective:1400px;height:440px;cursor:pointer; }
+  .flip-inner{
+    position:relative;width:100%;height:100%;
+    transition:transform .6s cubic-bezier(.4,.2,.2,1); transform-style:preserve-3d;
+  }
+  .card.flipped .flip-inner{transform:rotateY(180deg);}
+  .face{
+    position:absolute;inset:0; -webkit-backface-visibility:hidden;backface-visibility:hidden;
+    background:var(--card);border-radius:22px;overflow:hidden;
+    border:1px solid var(--line);box-shadow:var(--shadow);
+    display:flex;flex-direction:column; transition:box-shadow .25s ease;
+  }
+  .card:hover .face{box-shadow:0 18px 40px rgba(40,50,90,.16);}
+  .back{transform:rotateY(180deg);}
+  .visual{
+    position:relative;height:160px;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .visual svg{width:110px;height:110px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.12));
+    animation:bob 3s ease-in-out infinite;}
+  .visual .emoji-big{font-size:64px;animation:bob 3s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .badge{
+    position:absolute;top:14px;left:14px; background:rgba(255,255,255,.85);backdrop-filter:blur(4px);
+    font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;color:#111827;
+  }
+  .no{position:absolute;top:12px;right:16px;font-weight:800;font-size:28px;color:rgba(255,255,255,.5);}
+  .flip-tag{ position:absolute;bottom:10px;right:14px;font-size:11px;color:rgba(0,0,0,.35); }
+  .body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:9px;flex:1;}
+  .word-row{display:flex;align-items:center;gap:8px;}
+  .word{font-size:25px;font-weight:800;letter-spacing:.5px;line-height:1.1;}
+  .speak{
+    border:none;cursor:pointer;background:var(--accent,#ccc);color:#fff;
+    width:34px;height:34px;border-radius:50%;font-size:15px;line-height:1;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    box-shadow:0 4px 10px rgba(0,0,0,.15);transition:transform .15s ease,filter .15s ease;
+  }
+  .speak:hover{transform:scale(1.08);} .speak:active{transform:scale(.92);}
+  .speak.playing{animation:pulse .6s ease infinite;}
+  @keyframes pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35)}}
+  .speak.sm{width:27px;height:27px;font-size:12px;box-shadow:0 3px 8px rgba(0,0,0,.12);}
+  .phon{font-size:13px;color:var(--sub);font-family:"Courier New",monospace;}
+  .mean{font-size:15px;font-weight:600;color:#374151;}
+  .example{
+    position:relative;font-size:12.5px;color:#4b5563;line-height:1.6;
+    background:#f9fafb;border-left:3px solid var(--accent,#ccc);
+    padding:9px 38px 9px 11px;border-radius:8px;
+  }
+  .example .ex-en{color:#374151;} .example .ex-zh{color:var(--sub);margin-top:2px;}
+  .example .ex-en b{color:var(--ink);}
+  .example .speak{position:absolute;top:7px;right:7px;}
+  .memo{
+    margin-top:auto;display:flex;gap:9px;align-items:flex-start;
+    background:linear-gradient(90deg,var(--soft,#f3f4f6),#fff);
+    border:1px dashed var(--accent,#ddd);padding:10px 12px;border-radius:12px;
+  }
+  .memo .ic{font-size:18px;} .memo .txt{font-size:12.5px;color:#4b5563;line-height:1.55;}
+  .memo .txt b{color:var(--accent,#111);}
+  .back .body{justify-content:flex-start;gap:14px;}
+  .back .q{ font-size:13px;font-weight:700;color:#fff;align-self:flex-start;
+    background:var(--accent,#999);padding:4px 12px;border-radius:999px; }
+  .back .big-mean{font-size:28px;font-weight:800;color:var(--ink);line-height:1.3;margin-top:2px;}
+  .back .ex-en{font-size:14px;color:#374151;line-height:1.6;font-style:italic;position:relative;padding-right:34px;}
+  .back .ex-en .speak{position:absolute;top:-2px;right:0;}
+  .back .ex-zh{font-size:13px;color:var(--sub);line-height:1.6;margin-top:2px;}
+  .back .prompt{
+    margin-top:auto;font-size:13px;color:#4b5563;line-height:1.6;
+    background:#f9fafb;border-radius:12px;padding:12px;border:1px solid var(--line);
+  }
+  .back .prompt b{color:var(--accent,#4338ca);}
+  .self-test{ display:flex;gap:8px;margin-top:4px; }
+  .st-input{
+    flex:1;font-size:15px;padding:9px 12px;border-radius:10px;
+    border:1.5px solid var(--accent,#ddd);outline:none;
+    font-family:inherit;color:var(--ink);background:#fff;min-width:0;
+  }
+  .st-input:focus{ box-shadow:0 0 0 3px color-mix(in srgb, var(--accent,#999) 25%, transparent); }
+  .st-input::placeholder{color:#9ca3af;font-size:13px;}
+  .st-btn{
+    border:none;cursor:pointer;background:var(--accent,#999);color:#fff;
+    font-weight:700;font-size:14px;padding:0 18px;border-radius:10px;
+    box-shadow:0 4px 10px rgba(0,0,0,.15);transition:transform .15s ease,filter .15s ease;
+    flex-shrink:0;
+  }
+  .st-btn:hover{filter:brightness(1.08);} .st-btn:active{transform:scale(.94);}
+  .st-result{font-size:14px;font-weight:700;border-radius:10px;padding:9px 12px;margin-top:2px;line-height:1.5;}
+  .st-result.ok{color:#047857;background:#ecfdf5;border:1px solid #a7f3d0;}
+  .st-result.no{color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;}
+  .st-result b{font-family:"Courier New",monospace;font-size:15px;}
+  .c-deadline{--accent:#ef4444;--soft:#fff1f1;} .c-proactive{--accent:#f59e0b;--soft:#fff8ec;}
+  .c-hesitate{--accent:#8b5cf6;--soft:#f6f1ff;} .c-reliable{--accent:#0ea5e9;--soft:#eef8ff;}
+  .c-accomplish{--accent:#10b981;--soft:#edfaf3;} .c-default{--accent:#6b7280;--soft:#f3f4f6;}
+  .v-deadline{background:linear-gradient(135deg,#fee2e2,#fecaca);}
+  .v-proactive{background:linear-gradient(135deg,#fef3c7,#fde68a);}
+  .v-hesitate{background:linear-gradient(135deg,#ede9fe,#ddd6fe);}
+  .v-reliable{background:linear-gradient(135deg,#e0f2fe,#bae6fd);}
+  .v-accomplish{background:linear-gradient(135deg,#d1fae5,#a7f3d0);}
+  .v-default{background:linear-gradient(135deg,#e5e7eb,#d1d5db);}
+  .quote{
+    margin-top:34px;text-align:center;background:#fff;border:1px solid var(--line);
+    border-radius:18px;padding:22px;box-shadow:var(--shadow);
+  }
+  .quote .q{font-size:18px;font-weight:700;color:#4338ca;}
+  .quote .t{font-size:13px;color:var(--sub);margin-top:8px;}
+  footer.sign{text-align:center;color:#c4c9d4;font-size:12px;margin-top:26px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <span class="date">2026-07-13 · 每日 5 词</span>
+    <h1>单词角色卡 🦸 点词翻面自测</h1>
+    <p>生活 & 职场高频词 · 角色化记忆 + 美音跟读 + 翻面自测</p>
+  </header>
+  <div class="hintbar">
+    💡 <b>玩法：</b>点卡片任意处 <span class="k">翻到背面</span> 看中文，在输入框<b>默写英文单词</b>后点 <span class="k">验证</span> 自动核对；
+    点 <span class="k">🔊</span> 听单词发音，点例句旁的 <span class="k">🔊</span> 听整句美音。
+  </div>
+  <div class="history-bar">
+    <a class="hist-link" href="vocab-archive.html">📚 查看历史图鉴 · 全部 7 天</a>
+  </div>
+  <div class="grid" id="grid">
+    <div class="card c-default" data-word="communicate">
+      <div class="flip-inner">
+        <div class="face front">
+          <div class="visual v-default" style="background:linear-gradient(135deg,#e5e7eb,#d1d5db)">
+            <span class="badge">🗣️ 沟通传声筒</span><span class="no">1</span>
+            <div class="emoji-big">🗣️</div>
+            <span class="flip-tag">点击翻面自测 ↻</span>
+          </div>
+          <div class="body">
+            <div class="word-row">
+              <span class="word">communicate</span>
+              <button class="speak word" title="听单词发音">🔊</button>
+            </div>
+            <div class="phon">/kəˈmjuːnɪkeɪt/</div>
+            <div class="mean">(v.) 沟通，交流；传达</div>
+            <div class="example">
+              <button class="speak sm ex" data-sentence="Good teammates <b>communicate</b> clearly to avoid misunderstandings." title="听例句发音">🔊</button>
+              <div class="ex-en">Good teammates <b>communicate</b> clearly to avoid misunderstandings.</div>
+              <div class="ex-zh">优秀的队友会清晰沟通，避免误解。</div>
+            </div>
+            <div class="memo"><span class="ic">🗣️</span><span class="txt">词根 <b>commun</b>（共同）+ -icate（动词化）→ 让彼此「共同」理解 → 沟通。联想 communicate = 共 + 通。</span></div>
+          </div>
+        </div>
+        <div class="face back">
+          <div class="body">
+            <span class="q">🤔 自测模式</span>
+            <div class="big-mean">(v.) 沟通，交流；传达</div>
+            <div class="ex-en">"Good teammates <b>communicate</b> clearly to avoid misunderstandings."
+              <button class="speak sm ex" data-sentence="Good teammates <b>communicate</b> clearly to avoid misunderstandings." title="听例句发音">🔊</button>
+            </div>
+            <div class="ex-zh">优秀的队友会清晰沟通，避免误解。</div>
+            <div class="self-test">
+              <input class="st-input" type="text" placeholder="在此默写英文单词…" autocomplete="off" autocapitalize="off" spellcheck="false" />
+              <button class="st-btn" type="button">验证</button>
+            </div>
+            <div class="st-result" hidden></div>
+            <div class="prompt">🎯 默写后点<b>验证</b>自动核对；也可点卡片<b>翻回正面</b>查看拼写。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card c-reliable" data-word="responsibility">
+      <div class="flip-inner">
+        <div class="face front">
+          <div class="visual v-reliable" style="background:linear-gradient(135deg,#e0f2fe,#bae6fd)">
+            <span class="badge">🎯 责任担当者</span><span class="no">2</span>
+            <svg viewBox="0 0 120 120">
+          <path d="M60 18 L96 32 V60 C96 84 80 100 60 106 C40 100 24 84 24 60 V32 Z" fill="#0ea5e9"/>
+          <path d="M48 60 L57 70 L74 50" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+            <span class="flip-tag">点击翻面自测 ↻</span>
+          </div>
+          <div class="body">
+            <div class="word-row">
+              <span class="word">responsibility</span>
+              <button class="speak word" title="听单词发音">🔊</button>
+            </div>
+            <div class="phon">/rɪˌspɑːnsəˈbɪləti/</div>
+            <div class="mean">(n.) 责任，职责；义务</div>
+            <div class="example">
+              <button class="speak sm ex" data-sentence="Taking <b>responsibility</b> for mistakes builds trust with your team." title="听例句发音">🔊</button>
+              <div class="ex-en">Taking <b>responsibility</b> for mistakes builds trust with your team.</div>
+              <div class="ex-zh">为错误承担责任，能建立团队对你的信任。</div>
+            </div>
+            <div class="memo"><span class="ic">🎯</span><span class="txt"><b>response</b>（回应）+ -ibility（能力）→ 能「回应」事情的能力 = 责任。联想 responsible = 靠得住。</span></div>
+          </div>
+        </div>
+        <div class="face back">
+          <div class="body">
+            <span class="q">🤔 自测模式</span>
+            <div class="big-mean">(n.) 责任，职责；义务</div>
+            <div class="ex-en">"Taking <b>responsibility</b> for mistakes builds trust with your team."
+              <button class="speak sm ex" data-sentence="Taking <b>responsibility</b> for mistakes builds trust with your team." title="听例句发音">🔊</button>
+            </div>
+            <div class="ex-zh">为错误承担责任，能建立团队对你的信任。</div>
+            <div class="self-test">
+              <input class="st-input" type="text" placeholder="在此默写英文单词…" autocomplete="off" autocapitalize="off" spellcheck="false" />
+              <button class="st-btn" type="button">验证</button>
+            </div>
+            <div class="st-result" hidden></div>
+            <div class="prompt">🎯 默写后点<b>验证</b>自动核对；也可点卡片<b>翻回正面</b>查看拼写。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card c-proactive" data-word="motivate">
+      <div class="flip-inner">
+        <div class="face front">
+          <div class="visual v-proactive" style="background:linear-gradient(135deg,#fef3c7,#fde68a)">
+            <span class="badge">🔥 动力点燃师</span><span class="no">3</span>
+            <svg viewBox="0 0 120 120">
+          <path d="M20 90 L100 30" stroke="#f59e0b" stroke-width="6" stroke-linecap="round" stroke-dasharray="2 10"/>
+          <path d="M82 24 L100 30 L96 48 Z" fill="#f59e0b"/>
+          <circle cx="34" cy="82" r="8" fill="#fff" stroke="#f59e0b" stroke-width="3"/>
+          <text x="60" y="64" font-size="26" text-anchor="middle">🚀</text>
+        </svg>
+            <span class="flip-tag">点击翻面自测 ↻</span>
+          </div>
+          <div class="body">
+            <div class="word-row">
+              <span class="word">motivate</span>
+              <button class="speak word" title="听单词发音">🔊</button>
+            </div>
+            <div class="phon">/ˈmoʊtɪveɪt/</div>
+            <div class="mean">(v.) 激励，激发；使有动力</div>
+            <div class="example">
+              <button class="speak sm ex" data-sentence="A great leader knows how to <b>motivate</b> the whole team." title="听例句发音">🔊</button>
+              <div class="ex-en">A great leader knows how to <b>motivate</b> the whole team.</div>
+              <div class="ex-zh">优秀的领导者懂得如何激励整个团队。</div>
+            </div>
+            <div class="memo"><span class="ic">🔥</span><span class="txt">词根 <b>motiv</b>（动机）+ -ate（动词化）→ 唤起内心的「动机」→ 激励。联想 motive = 动机。</span></div>
+          </div>
+        </div>
+        <div class="face back">
+          <div class="body">
+            <span class="q">🤔 自测模式</span>
+            <div class="big-mean">(v.) 激励，激发；使有动力</div>
+            <div class="ex-en">"A great leader knows how to <b>motivate</b> the whole team."
+              <button class="speak sm ex" data-sentence="A great leader knows how to <b>motivate</b> the whole team." title="听例句发音">🔊</button>
+            </div>
+            <div class="ex-zh">优秀的领导者懂得如何激励整个团队。</div>
+            <div class="self-test">
+              <input class="st-input" type="text" placeholder="在此默写英文单词…" autocomplete="off" autocapitalize="off" spellcheck="false" />
+              <button class="st-btn" type="button">验证</button>
+            </div>
+            <div class="st-result" hidden></div>
+            <div class="prompt">🎯 默写后点<b>验证</b>自动核对；也可点卡片<b>翻回正面</b>查看拼写。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card c-deadline" data-word="schedule">
+      <div class="flip-inner">
+        <div class="face front">
+          <div class="visual v-deadline" style="background:linear-gradient(135deg,#fee2e2,#fecaca)">
+            <span class="badge">📅 时间管家</span><span class="no">4</span>
+            <svg viewBox="0 0 120 120">
+          <rect x="14" y="55" width="92" height="10" rx="5" fill="#ef4444"/>
+          <circle cx="60" cy="60" r="7" fill="#fff" stroke="#ef4444" stroke-width="3"/>
+          <text x="60" y="30" font-size="22" text-anchor="middle">⏰</text>
+          <path d="M14 60 L6 44 L20 50 Z" fill="#ef4444"/>
+          <path d="M106 60 L114 44 L100 50 Z" fill="#ef4444"/>
+        </svg>
+            <span class="flip-tag">点击翻面自测 ↻</span>
+          </div>
+          <div class="body">
+            <div class="word-row">
+              <span class="word">schedule</span>
+              <button class="speak word" title="听单词发音">🔊</button>
+            </div>
+            <div class="phon">/ˈskedʒuːl/</div>
+            <div class="mean">(n.) 日程表；(v.) 安排，排期</div>
+            <div class="example">
+              <button class="speak sm ex" data-sentence="Let's <b>schedule</b> the meeting before Friday's deadline." title="听例句发音">🔊</button>
+              <div class="ex-en">Let's <b>schedule</b> the meeting before Friday's deadline.</div>
+              <div class="ex-zh">我们把会议安排在周五截止日前吧。</div>
+            </div>
+            <div class="memo"><span class="ic">📅</span><span class="txt">本义「时间表/清单」→ 把任务放进时间表里 = 排期。联想 schedule = 时刻表。</span></div>
+          </div>
+        </div>
+        <div class="face back">
+          <div class="body">
+            <span class="q">🤔 自测模式</span>
+            <div class="big-mean">(n.) 日程表；(v.) 安排，排期</div>
+            <div class="ex-en">"Let's <b>schedule</b> the meeting before Friday's deadline."
+              <button class="speak sm ex" data-sentence="Let's <b>schedule</b> the meeting before Friday's deadline." title="听例句发音">🔊</button>
+            </div>
+            <div class="ex-zh">我们把会议安排在周五截止日前吧。</div>
+            <div class="self-test">
+              <input class="st-input" type="text" placeholder="在此默写英文单词…" autocomplete="off" autocapitalize="off" spellcheck="false" />
+              <button class="st-btn" type="button">验证</button>
+            </div>
+            <div class="st-result" hidden></div>
+            <div class="prompt">🎯 默写后点<b>验证</b>自动核对；也可点卡片<b>翻回正面</b>查看拼写。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card c-default" data-word="adaptable">
+      <div class="flip-inner">
+        <div class="face front">
+          <div class="visual v-default" style="background:linear-gradient(135deg,#e5e7eb,#d1d5db)">
+            <span class="badge">🦎 随机应变侠</span><span class="no">5</span>
+            <div class="emoji-big">🦎</div>
+            <span class="flip-tag">点击翻面自测 ↻</span>
+          </div>
+          <div class="body">
+            <div class="word-row">
+              <span class="word">adaptable</span>
+              <button class="speak word" title="听单词发音">🔊</button>
+            </div>
+            <div class="phon">/əˈdæptəbl/</div>
+            <div class="mean">(adj.) 适应性强的；灵活的</div>
+            <div class="example">
+              <button class="speak sm ex" data-sentence="An <b>adaptable</b> worker thrives when plans suddenly change." title="听例句发音">🔊</button>
+              <div class="ex-en">An <b>adaptable</b> worker thrives when plans suddenly change.</div>
+              <div class="ex-zh">适应能力强的员工，在计划突变时也能游刃有余。</div>
+            </div>
+            <div class="memo"><span class="ic">🦎</span><span class="txt">词根 <b>ad-</b>（向）+ <b>apt</b>（适合）+ -able → 能「变得适合」→ 适应性强的。联想 adapt = 顺应。</span></div>
+          </div>
+        </div>
+        <div class="face back">
+          <div class="body">
+            <span class="q">🤔 自测模式</span>
+            <div class="big-mean">(adj.) 适应性强的；灵活的</div>
+            <div class="ex-en">"An <b>adaptable</b> worker thrives when plans suddenly change."
+              <button class="speak sm ex" data-sentence="An <b>adaptable</b> worker thrives when plans suddenly change." title="听例句发音">🔊</button>
+            </div>
+            <div class="ex-zh">适应能力强的员工，在计划突变时也能游刃有余。</div>
+            <div class="self-test">
+              <input class="st-input" type="text" placeholder="在此默写英文单词…" autocomplete="off" autocapitalize="off" spellcheck="false" />
+              <button class="st-btn" type="button">验证</button>
+            </div>
+            <div class="st-result" hidden></div>
+            <div class="prompt">🎯 默写后点<b>验证</b>自动核对；也可点卡片<b>翻回正面</b>查看拼写。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="quote">
+    <div class="q">"Small daily progress adds up to big results."</div>
+    <div class="t">每天的微小进步，终将累积成巨大的成果。🌱</div>
+  </div>
+  <footer class="sign">每日 5 词 · 单词角色卡（自测版）· 2026-07-13</footer>
+</div>
+<script>
+  let usVoice = null;
+  function pickVoice(){
+    const vs = speechSynthesis.getVoices(); if(!vs.length) return;
+    usVoice = vs.find(v=>/en[-_]US/i.test(v.lang) && /Samantha|Google US|Microsoft Aria|US English/i.test(v.name))
+           || vs.find(v=>/en[-_]US/i.test(v.lang)) || vs.find(v=>/^en/i.test(v.lang)) || null;
+  }
+  pickVoice(); speechSynthesis.onvoiceschanged = pickVoice;
+  function speak(text, btn){
+    if(!('speechSynthesis' in window)){ alert('当前浏览器不支持语音合成，请换 Chrome / Edge / Safari 试试。'); return; }
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; u.rate = 0.7; u.pitch = 1.0;   // 放慢语速，适合初学者跟读
+    if(usVoice) u.voice = usVoice;
+    if(btn){ btn.classList.add('playing'); u.onend = u.onerror = ()=> btn.classList.remove('playing'); }
+    speechSynthesis.speak(u);
+  }
+  document.querySelectorAll('.card').forEach(card=>{
+    const wordBtn = card.querySelector('.speak.word');
+    const exBtns  = card.querySelectorAll('.speak.ex');
+    wordBtn.addEventListener('click', e=>{ e.stopPropagation(); speak(card.dataset.word, wordBtn); });
+    exBtns.forEach(b=>{ b.addEventListener('click', e=>{ e.stopPropagation(); speak(b.dataset.sentence, b); }); });
+
+    // —— 自测输入框：验证拼写 ——
+    const st = card.querySelector('.self-test');
+    const input = card.querySelector('.st-input');
+    const btn = card.querySelector('.st-btn');
+    const result = card.querySelector('.st-result');
+    function check(){
+      const val = (input.value || '').trim().toLowerCase();
+      const ans = (card.dataset.word || '').trim().toLowerCase();
+      if(!val) return;
+      if(val === ans){
+        result.innerHTML = '✅ 正确！拼写无误 🎉';
+        result.className = 'st-result ok';
+      } else {
+        result.innerHTML = '❌ 正确答案：<b>' + (card.dataset.word || '') + '</b>';
+        result.className = 'st-result no';
+      }
+      result.hidden = false;
+    }
+    if(st) st.addEventListener('click', e=> e.stopPropagation());
+    if(input){
+      input.addEventListener('click', e=> e.stopPropagation());
+      input.addEventListener('input', ()=> { result.hidden = true; });
+      input.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); check(); } });
+    }
+    if(btn) btn.addEventListener('click', e=>{ e.stopPropagation(); check(); });
+
+    card.addEventListener('click', ()=>{
+      card.classList.toggle('flipped');
+      if(card.classList.contains('flipped') && input){ setTimeout(()=> input.focus(), 350); }
+    });
+  });
+</script>
+</body>
+</html>
